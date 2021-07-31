@@ -1,0 +1,403 @@
+---
+title: "HSCI 50 LAB 7: Correlation and Regression ANSWER KEY"
+output: pdf_document
+header-includes:
+- \usepackage[default]{lato}
+- \usepackage[T1]{fontenc}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancypagestyle{plain}{\pagestyle{fancy}}
+- \fancyhead[R]{\ifnum\value{page}>1 \else Haw NJ / ADMU HSP \fi}
+mainfont: Lato
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev="cairo_pdf")
+```
+
+```{r libraries, include = FALSE}
+library(tidyverse)
+library(knitr)
+library(sysfonts)
+library(kableExtra)
+library(gridExtra)
+windowsFonts("Lato" = windowsFont("Lato"))
+```
+
+**INSTRUCTIONS**
+
+The data set that we will be using for the entire course is resampled data from the MIT COVID-19 Beliefs, Behaviors & Norms Survey (https://covidsurvey.mit.edu/api.html). This is a multi-country, online survey that examined different COVID-19 perceptions across time, from July 6, 2020 to March 28, 2021. We will be using data from the Philippines aged 20 to 60. **Assume the data are randomly sampled.**
+
+In this lab, you will learn how to interpret correlation outputs between two continuous variables, and interpret outputs from simple and multiple linear and logistic regression models.
+
+You have many options to submit this worksheet. Either you work on this by hand and scan/take a clear photo of your submission and save as PDF, or type your responses in a Word processor or PowerPoint presentation. You do not have to copy the questions again, but please number them accordingly.
+
+```{r read_data, include = FALSE}
+data_norms <- read.csv("C:/Users/neljasonhaw/Google Drive (nhaw@ateneo.edu)/HSCI 50 SY 2021-2022/Labs/vax_norms_dummydata.csv")
+data_accept <- read.csv("C:/Users/neljasonhaw/Google Drive (nhaw@ateneo.edu)/HSCI 50 SY 2021-2022/Labs/vax_accept_dummydata.csv")
+```
+
+&nbsp;
+
+**PART A. Correlation**
+
+Let us revisit the **vaccine norms** variable we had used in Labs 3, 4 and 6. Individuals were asked about their perceptions of how other people will accept the COVID-19 vaccine, as a measurement of vaccine norms. They were asked, "Out of 100 people in your community, how many do you think would take a COVID-19 vaccine if it were made available?" Again, while this is technically a discrete variable, we will assume for the purposes of this class that this is a continuous variable.
+
+In Lab 6, we determined that vaccine norms differed by age group. We will examine the same relationship but with a different functional form of the age variable. We will use age as a continuous variable in years. While this is technically a discrete variable, we will assume for the purposes of this class that this is continuous.
+
+The following are statistical outputs that will help you answer the following questions.
+
+&nbsp;
+
+```{r histcorr, fig.height = 5, fig.width = 10, echo = FALSE, message = FALSE}
+# Filter data to only include those from Wave 19
+data_norms_19 <- data_norms %>% filter(wave == 19)
+
+# Histogram of age
+hist_age <- ggplot(data = data_norms_19) + 
+  geom_histogram(aes(x = age), bins = 20, fill = "darkmagenta") +
+  theme_minimal() + xlab("") + ylab("Frequency") +
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Histogram of age")
+
+# Histogram of vaccine_norm
+hist_vax <- ggplot(data = data_norms_19) + 
+  geom_histogram(aes(x = vaccine_norm), bins = 20, fill = "darkorange2") +
+  theme_minimal() + xlab("") + ylab("Frequency") +
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Histogram of vaccine norm")
+
+# Arrange histograms side by side
+grid.arrange(hist_age, hist_vax, ncol=2)
+
+# Scatterplot of vaccine_norm by age
+scatter1 <- ggplot(data = data_norms_19, aes(x = age, y = vaccine_norm)) + 
+  geom_point(color = "gray") + 
+  geom_smooth(method = lm, se = FALSE, color = "deepskyblue4", size = 2) +
+  theme_minimal() + xlab("Age (in years)") + ylab("Vaccine norm") +
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Scatterplot of vaccine norm by age in the Philippines, March 14 to 28, 2021")
+scatter1
+```
+
+&nbsp;
+
+```{r corrtest, warning = FALSE, message = FALSE}
+# Pearson's correlation coefficient output for vaccine norm by age relationship
+cor.test(x = data_norms_19$age, y = data_norms_19$vaccine_norm, method = 'pearson')
+
+# Spearman's correlation coefficient output for vaccine norm by age relationship
+cor.test(x = data_norms_19$age, y = data_norms_19$vaccine_norm, method = 'spearman')
+```
+
+&nbsp;
+
+&nbsp;
+
+**1. What are the appropriate null and alternative hypotheses for the correlation above?**
+
+$$H_0: \rho = 0; H_a: \rho \neq 0 $$
+
+**2. What is the scatterplot telling us? Is there some indication of a potentially linear relationship?**
+
+The line of best fit shows a weak increase in vaccine norm as age increases. But the scatterplot shows more of a random scatter, with a faint indication that the points generally increase as age increases in a linear fashion.
+
+**3. Based on the scatterplot, is it appropriate to calculate a Pearson's correlation coefficient, a Spearman's correlation coefficient, both, or neither?**
+
+There is a faint linear trend, which may justify the calculation of either the Pearson's or Spearman's correlation coefficient, but we already anticipate that the coefficient will be very low (close to zero)
+
+**4. What are the assumptions required for calculating the correlation coefficient?**
+
+The assumptions are:
+
+* The variables are both continuous
+* The data are independently and identically distributed: we assume this to be the case since it was indicated in the worksheet.
+* Vaccine norm and age are both normally distributed: we see this to be the case from the histograms. There is some violation of the normality assumption for the age variable, but we will accept this as an acceptable violation to still calculate the correlation coefficient
+* The relationship shows a linear trend (for Pearson) or at least a monotonically increasing trend (for Spearman)
+
+**5. What can you conclude? Either use the *p*-value or the 95% confidence interval (CI). Report the magnitude and direction of the correlation coefficient. Report Pearson's/Spearman's correlation coefficients as appropriate.**
+
+Using the Pearson's correlation coefficient:
+
+* The point estimate of the Pearson's correlation coefficient is +0.13, which is a very weak positive linear trend.
+* Using the *p*-value, the *p*-value is <0.0005. Because *p* < 0.05, we reject the null hypothesis and conclude the correlation coefficient is not equal to zero.
+* Using the confidence interval (CI), the 95% confidence interval is: (+0.07, +0.19). We see that the null value 0 does not cross the 95% CI, therefore we also conclude that the correlation coefficient is not equal to zero
+
+Using the Spearman's correlation coefficient:
+
+* The point estimate of the Spearman's correlation coefficient is +0.10, which is a very weak positive linear trend.
+* Using the *p*-value, the *p*-value is 0.0021. Because *p* < 0.05, we reject the null hypothesis and conclude the correlation coefficient is not equal to zero.
+* The statistical output did not report a 95% confidence interval (This happens when there are too many ties in the data, meaning there are many observations with the same value for vaccine norm on the same value for age. This is beyond the scope of our lessons but this is just an important note.)
+
+
+\newpage
+
+
+**PART B. Linear Regression**
+
+We will now try to model the relationship of vaccine norm against age and gender. Gender is a binary variable in our dataset (Male / Female) while we will model age as a continuous variable centered at 20 years old, which is the lowest age in our data. Note that centering is not restricted to the mean of the data, and we can center the value of any continuous variable to any constant value as approrpiate to make the model more interpretable.
+
+The following are statistical outputs that will help you answer the following questions. Aside from these statistical outputs, consider the statistical outputs from the previous question. Recall that centering a variable does not change the shape of the scatterplot, so the same scatterplot of vaccine norm by age applies to this part regardless of where we centered the variable.
+
+When reading the statistical outputs of the linear regression model, pay attention to the `Analysis of Variance` table and the table of `Coefficients`. Under the table of `Coefficients`:
+
+* `(Intercept)` shows the value of $b_0$
+* The name of the variable shows the value of $b_1$
+* The `t-value` is the t-statistic
+* `Pr(>|t|)` shows the two-sided *p*-value of the t-statistic for the coefficient
+* There are also 95% confidence intervals of the beta coefficients indicated under `2.5%` for the lower limit of the confidence interval and `97.5%` for the upper limit of the confidence interval.
+
+The coefficient of determination is indicated under `Multiple R-squared`
+
+There are also a set of diagnostic plots that should look familiar to you: a residuals vs. fitted values scatterplot, and a Q-Q plot of the residuals.
+
+\newpage
+
+**Statistical Outputs 1: Simple Linear Regression of Vaccine Norms by Age (centered at  20)**
+
+```{r linreg_age, fig.height = 5, fig.width = 10,  echo = FALSE, message = FALSE}
+# Center age at age 20 and call the variable age_cent20
+data_norms_19 <- data_norms_19 %>% mutate(age_cent20 = age - 20)
+
+## Simple linear regression of vaccine norm by age (centered at 20)
+# Model
+simple_age <- lm(vaccine_norm  ~ age_cent20, data = data_norms_19)
+# ANOVA of regression model
+anova(simple_age)
+# Model coefficients
+summary(simple_age)
+confint(simple_age)
+# Predict residuals
+data_norms_19$age_residuals <- residuals(simple_age)
+# Predict fitted values
+data_norms_19$age_predict <- predict(simple_age)
+# Scatterplot of residuals vs. fitted values
+scatter2 <- ggplot(data = data_norms_19, aes(x = age_predict, y = age_residuals)) + 
+  geom_point(color = "gray") + 
+  geom_smooth(method = lm, se = FALSE, color = "deepskyblue4", size = 2) +
+  theme_minimal() + xlab("Fitted values") + ylab("Residuals") +
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Residuals vs. Fitted values scatterplot")
+# Q-Q plot of residuals
+qq2 <- ggplot(data = data_norms_19, aes(sample = age_residuals)) + 
+  geom_qq(color = "deepskyblue4", size = 2) + geom_qq_line(size = 1) +
+  theme_minimal() + xlab("Theoretical distribution") + ylab("Sample distribution") +
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Q-Q plot of residuals")
+# Arrange plots side by side
+grid.arrange(scatter2, qq2, ncol=2)
+```
+
+\newpage
+
+**Statistical Outputs 2: Simple Linear Regression of Vaccine Norms by Gender**
+
+For gender, the reference category is female.
+
+```{r linreg_gender, fig.height = 5, fig.width = 10,  echo = FALSE, message = FALSE}
+## Simple linear regression of vaccine norm by age (centered at 20)
+# Model
+simple_gender <- lm(vaccine_norm  ~ gender, data = data_norms_19)
+# ANOVA of regression model
+anova(simple_gender)
+# Model coefficients
+summary(simple_gender)
+confint(simple_gender)
+# Predict residuals
+data_norms_19$gender_residuals <- residuals(simple_gender)
+# Predict fitted values
+data_norms_19$gender_predict <- predict(simple_gender)
+# Scatterplot of residuals vs. fitted values
+scatter3 <- ggplot(data = data_norms_19, aes(x = gender_predict, y = gender_residuals)) + 
+  geom_point(color = "gray") + 
+  geom_smooth(method = lm, se = FALSE, color = "deepskyblue4", size = 2) +
+  theme_minimal() + xlab("Fitted values") + ylab("Residuals") +
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Residuals vs. Fitted values scatterplot")
+# Q-Q plot of residuals
+qq3 <- ggplot(data = data_norms_19, aes(sample = gender_residuals)) + 
+  geom_qq(color = "deepskyblue4", size = 2) + geom_qq_line(size = 1) +
+  theme_minimal() + xlab("Theoretical distribution") + ylab("Sample distribution") +
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Q-Q plot of residuals")
+# Arrange plots side by side
+grid.arrange(scatter3, qq3, ncol=2)
+```
+
+\newpage
+
+**Statistical Outputs 3: Multiple Linear Regression of Vaccine Norms by Gender and Age (centered at  20)**
+
+For gender, the reference category is female.
+
+```{r linreg_multiple, fig.height = 4, fig.width = 10,  echo = FALSE, message = FALSE}
+## Multiple linear regression of vaccine norm by gender and age (centered at 20)
+# Model
+multiple_line <- lm(vaccine_norm  ~ gender + age_cent20, data = data_norms_19)
+# ANOVA of regression model
+anova(multiple_line)
+# Model coefficients
+summary(multiple_line)
+confint(multiple_line)
+# Predict residuals
+data_norms_19$multiple_line_residuals <- residuals(multiple_line)
+# Predict fitted values
+data_norms_19$multiple_line_predict <- predict(multiple_line)
+# Scatterplot of residuals vs. fitted values
+scatter4 <- ggplot(data = data_norms_19, aes(x = multiple_line_predict, y = multiple_line_residuals)) + 
+  geom_point(color = "gray") + 
+  geom_smooth(method = lm, se = FALSE, color = "deepskyblue4", size = 2) +
+  theme_minimal() + xlab("Fitted values") + ylab("Residuals") +
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Residuals vs. Fitted values scatterplot")
+# Q-Q plot of residuals
+qq4 <- ggplot(data = data_norms_19, aes(sample = multiple_line_residuals)) + 
+  geom_qq(color = "deepskyblue4", size = 2) + geom_qq_line(size = 1) +
+  theme_minimal() + xlab("Theoretical distribution") + ylab("Sample distribution") +
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Q-Q plot of residuals")
+# Arrange plots side by side
+grid.arrange(scatter4, qq4, ncol=2)
+```
+
+\newpage
+
+**1. First, take a look at the statistical output of the simple linear regression of vaccine norm by age (Statistical Output 1). What are the appropriate null and alternative hypotheses for that particular linear regression model?**
+
+$$H_0: \beta_{\rm{age}} = 0; H_a: \beta_{\rm{age}} \neq 0 $$
+
+&nbsp;
+
+**2. What are the assumptions required for the simple linear regression of vaccine norm by age (Statistical Output 1)? Do we expect the same set of assumptions for the simple linear regression of vaccine norm by gender?**
+
+The assumptions are:
+
+* The outcome variable is continuous (vaccine norm is a continuous variable)
+* The data are independently and identically distributed: we assume this to be the case since it was indicated in the worksheet.
+* The residuals must be normally distributed: we see this to be the case from the Q-Q plot of the residuals
+* Homoscedasticity of variance: we see this to be true as the scatterplot of residuals vs. fitted values show a fairly equally scatter of points in the scatterplot with the line of fit fairly horizontal at y = 0.
+* There is a linear relationship between the variables: we saw this earlier with the scatterplot of vaccine norm by age, where there was a faint linear relationship.
+
+For the simple linear regression of vaccine norm by gender, we do not need the last assumption as gender is a categorical variable.
+
+&nbsp;
+
+**3. Describe the equation of the line for all three regression models above, with the values of the coefficients from the regression model results. Recall that the format of the equation of the line for a simple linear regression is $Y = \beta_0 + \beta_1X_1$ and add more $\beta_pX_p$ as needed in a multiple linear regression model.**
+
+The equations of the line are as follows:
+
+* Simple linear regression of vaccine norm by age ($X_1$): $Y = 51.74 + 0.19X_1$
+* Simple linear regression of vaccine norm by gender (male coefficient = $X_1$): $Y = 54.41 + 1.19X_1$
+* Multiple linear regression of vaccine norm by age ($X_1$) and gender (male coefficient = $X_2$): $Y = 51.74 + 0.19X_1 - 0.004X_2$
+
+**4. For each of the three regression models above, what do they altogether say about the association of vaccine norm by age and gender? Either use the appropriate test statistic or the 95% confidence interval (CI). Report an interpretation for the point estimate of age in the simple linear regression model. Report an interpretation for the point estimate of age in the multiple linear regression as well.**
+
+For age:
+
+* Looking at the simple linear regression model, the beta coefficient is 0.19 (95% CI: 0.10 - 0.28) and the *F*-statistic of the model is 16.33 with a corresponding *p*-value < 0.0005 (Note: We may also choose to report the *t*-statistic of the coefficient: 4.041, corresponding *p*-value < 0.0005). Because *p* < 0.05 and the 95% CI does not cross the null value of zero, we reject the null hypothesis that the beta coefficient is zero.
+* Looking at the multiple linear regression model, the beta coefficient is 0.19 (95% CI: 0.09 - 0.29) and the *t*-statistic of the coefficient is 3.884 with a corresponding *p*-value = 0.0001.  Because *p* < 0.05 and the 95% CI does not cross the null value of zero, we also reject the null hypothesis that the beta coefficient is zero.
+* Therefore, age is associated with vaccine norm. The point estimate of the coefficient of age did not change much with the inclusion of gender as a covariate in the multiple linear regression model. We interpret the coefficient for the simple linear regression as: Every one year increase in age is associated with an increase of 0.19 points of vaccine norm. The multiple linear regression coefficient of age is interpreted as: Adjusting for gender, every one year increase in age is associated with an increase of 0.19 points of vaccine norm.
+
+For gender:
+
+* Looking at the simple linear regression model, the beta coefficient is 1.19 (95% CI: -0.92 - 3.30) and the *F*-statistic of the model is 1.212 with a corresponding *p*-value = 0.271 (Note: We may also choose to report the *t*-statistic of the coefficient: 1.101, corresponding *p*-value = 0.271). Because *p* > 0.05 and the 95% CI crosses the null value of zero, we fail to reject the null hypothesis that the beta coefficient is zero.
+* Looking at the multiple linear regression model, the beta coefficient is -0.004 (95% CI: -2.19 - 2.18) and the *t*-statistic of the coefficient is -0.003 with a corresponding *p*-value = 0.997. Because *p* > 0.05 and the 95% CI crosses the null value of zero, we also fail to reject the null hypothesis that the beta coefficient is zero
+* Therefore gender is not associated with vaccine norm.
+
+&nbsp;
+
+**5. Using the appropriate equation of the line from 3, predict the vaccine norm score for a 50 year old male. Report the point estimate only.**
+
+The appropriate model to use is the multiple linear regression model that considers age and gender in the same model. Recall that age is centered at 20, so $X_1 = 50 - 20 = 30$ and since male is the gender coefficient in the model, $X_2 = 1$. Plugging in the values on the equation $Y = 51.74 + 0.19X_1 - 0.004X_2$ should give us the value $Y = 51.74 + 0.19*30 - 0.004*1 = 57.4$.
+
+
+\newpage
+
+
+**PART C. Logistic regression**
+
+For this part, we will recode the vaccine acceptance variable into a binary category similar to Lab 3 and 5 called vaccine hesitancy, where those who do not accept the vaccine or are unsure about it will be considered vaccine hesitant, otherwise they are not vaccine hesitant. Age is again analyzed as a continuous variable centered at age 20. 
+
+The following are statistical outputs that will help you answer the following questions. 
+
+When reading the statistical outputs of the logistic regression model, pay attention to the following:
+
+* The `Coefficients` table is like the `Coefficients` table in the linear regression model result; however, the coefficients have not yet been exponentiated to odds ratios.
+* The odds ratios and corresponding 95% CI are found at the end of the output under the table with the header columns `2.5%` and `97.5%`
+
+&nbsp;
+
+**Statistical Output 4: Simple Logistic Regression of Vaccine Hesitancy by Age (centered at 20)**
+
+```{r logistic1, fig.height = 4, fig.width = 10,  echo = FALSE, message = FALSE}
+# Filter data to only include those from Wave 19
+data_accept_19 <- data_accept %>% filter(wave == 19) 
+
+# Generate binary variable of vaccine hesitancy
+data_accept_19 <- data_accept_19 %>% 
+  mutate(hesitant = case_when(response == "Yes" | response == "Vaccinated" ~ 0,
+                              response == "No" | response == "Don't Know" ~ 1))
+
+# Center age at age 20 and call the variable age_cent20
+data_accept_19 <- data_accept_19 %>% mutate(age_cent20 = age - 20)
+
+## Simple linear regression of vaccine norm by age (centered at 20)
+# Model
+age_logit <- glm(hesitant ~ age_cent20, family = binomial(link = 'logit'), data = data_accept_19)
+# Model coefficients
+summary(age_logit)
+exp(cbind(coef(age_logit), confint(age_logit)))  
+```
+
+\newpage
+
+**Statistical Output 5: Simple Logistic Regression of Vaccine Hesitancy by Gender**
+
+For gender, the reference category is female.
+
+```{r logistic2, fig.height = 4, fig.width = 10,  echo = FALSE, message = FALSE}
+## Simple linear regression of vaccine norm by gender
+# Model
+age_logit <- glm(hesitant ~ gender, family = binomial(link = 'logit'), data = data_accept_19)
+# Model coefficients
+summary(age_logit)
+exp(cbind(coef(age_logit), confint(age_logit)))  
+```
+
+\newpage
+
+**Statistical Output 6: Multiple Logistic Regression of Vaccine Hesitancy by Gender and Age (centered at  20)**
+
+For gender, the reference category is female.
+
+```{r logistic3, fig.height = 4, fig.width = 10,  echo = FALSE, message = FALSE}
+## Multiple linear regression of vaccine norm by gender and age (centered at 20)
+# Model
+multiple_logit <- glm(hesitant  ~ gender + age_cent20, family = binomial(link='logit'), data = data_accept_19)
+# Model coefficients
+summary(multiple_logit)
+exp(cbind(coef(multiple_logit), confint(multiple_logit)))  
+```
+
+&nbsp;
+
+**For each of the three logistic regression models above, what do they altogether say about the association of vaccine hesitancy by age and gender? Either use the appropriate test statistic or the 95% confidence interval (CI). Provide an interpretation of the odds ratio between male and female from the simple logistic regression model and the multiple logistic regression model.**
+
+For age:
+
+* Looking at the simple logistic regression model, the odds ratio is 0.972 (95% CI: 0.962 - 0.982) and the *z*-statistic of the coefficient is -5.278 with a corresponding *p*-value < 0.0005. Because p < 0.05 and the 95% CI does not cross the null value of zero, we reject the null hypothesis that the log odds is zero (or the odds ratio is 1).
+* Looking at the multiple logistic regression model, the odds ratio is 0.976 (95% CI: 0.965 - 0.986) and the *z*-statistic of the coefficient is -4.503 with a corresponding *p*-value < 0.0005. Because p < 0.05 and the 95% CI does not cross the null value of zero, we also the reject the null hypothesis that the log odds is zero (or the odds ratio is 1)
+* Therefore, age is associated with vaccine hesitancy. Every year increase in age is associated with a 2.8% decrease in odds in the simple logistic regression model and 2.4% decrease in odds in the multiple logistic regression model adjusting for gender.
+
+For gender:
+
+* Looking at the simple logistic regression model, the odds ratio is 0.431 (95% CI: 0.339 - 0.547) and the *z*-statistic of the coefficient is -6.899 with a corresponding *p*-value < 0.0005. Because p < 0.05 and the 95% CI does not cross the null value of zero, we reject the null hypothesis that the log odds is zero (or the odds ratio is 1).
+* Looking at the multiple logistic regression model, the odds ratio is 0.458 (95% CI: 0.359 - 0.582) and the *z*-statistic of the coefficient is -6.330 with a corresponding *p*-value < 0.0005. Because p < 0.05 and the 95% Ci does not cross the null value of zero, we reject the null hypothesis that the log odds is zero (or the odds ratio is 1).
+* Therefore, gender is associated with vaccine hesitancy. Males are associated with a 56.9% decrease in odds in the simple logistic regression model and 54.2% decrease in odds in the multiple logistic regression model adjusting for age.
+
+&nbsp;
+
+\center END OF LAB \center
+

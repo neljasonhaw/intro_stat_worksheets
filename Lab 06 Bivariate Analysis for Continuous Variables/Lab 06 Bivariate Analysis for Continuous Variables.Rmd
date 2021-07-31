@@ -1,0 +1,393 @@
+---
+title: "HSCI 50 LAB 6: Bivariate Analysis for Continuous Variables ANSWER KEY"
+output: pdf_document
+header-includes:
+- \usepackage[default]{lato}
+- \usepackage[T1]{fontenc}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancypagestyle{plain}{\pagestyle{fancy}}
+- \fancyhead[R]{\ifnum\value{page}>1 \else Haw NJ / ADMU HSP \fi}
+mainfont: Lato
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev="cairo_pdf")
+```
+
+```{r libraries, include = FALSE}
+library(tidyverse)
+library(knitr)
+library(sysfonts)
+library(kableExtra)
+library(gridExtra)
+windowsFonts("Lato" = windowsFont("Lato"))
+```
+
+**INSTRUCTIONS**
+
+The data set that we will be using for the entire course is resampled data from the MIT COVID-19 Beliefs, Behaviors & Norms Survey (https://covidsurvey.mit.edu/api.html). This is a multi-country, online survey that examined different COVID-19 perceptions across time, from July 6, 2020 to March 28, 2021. We will be using data from the Philippines aged 20 to 60. **Assume the data are randomly sampled.**
+
+In this lab, you will learn how to conduct and interpret statistical outputs from an independent samples *t*-test, a paired samples *t*-test, and a one-way analysis of variance (ANOVA).
+
+You have many options to submit this worksheet. Either you work on this by hand and scan/take a clear photo of your submission and save as PDF, or type your responses in a Word processor or PowerPoint presentation. You do not have to copy the questions again, but please number them accordingly.
+
+```{r read_data, include = FALSE}
+data <- read.csv("C:/Users/neljasonhaw/Google Drive (nhaw@ateneo.edu)/HSCI 50 SY 2021-2022/Labs/vax_norms_dummydata.csv")
+```
+
+&nbsp;
+
+Let's revisit the **vaccine norms** variable we had used in Labs 3 and 4. Individuals were asked about their perceptions of how other people will accept the COVID-19 vaccine, as a measurement of vaccine norms. They were asked, "Out of 100 people in your community, how many do you think would take a COVID-19 vaccine if it were made available?" Again, while this is technically a discrete variable, we will assume for the purposes of this class that this is a continuous variable.
+
+&nbsp;
+
+**PART A. Independent samples *t*-test**
+
+For this part, we want to check if there are any differences in vaccine norm by gender (male vs. female) during the last survey wave (March 14 to 28, 2021). The following are statistical outputs that will help you answer the following questions.
+
+```{r eda1, fig.width = 10, fig.height = 4.75, echo = FALSE, warning = FALSE}
+## Preparing data for independent samples t-test
+## data frame "data" contains the data used for this lab
+## variables: "gender" - male vs female;  "vaccine_norm" - range: 1 to 100; "wave" - 9 (Oct 26 - Nov 8) and 19 (Mar 14 to 28)
+
+# male19 contains all the values of vaccine norms for males during the last survey wave (Wave 19)
+male19 <- data %>% filter(gender == "male" & wave == 19) %>% select(vaccine_norm)
+male19 <- as.numeric(male19$vaccine_norm)
+# female19 contains all the values of vaccine norms for females during the last survey wave (Wave 19)
+female19 <- data %>% filter(gender == "female" & wave == 19) %>% select(vaccine_norm)
+female19 <- as.numeric(female19$vaccine_norm)
+
+# Filter data - wave 19 only
+data19 <- data %>% filter(wave == 19)
+
+# Plot histogram of vaccine norms by gender
+hist_gender <- ggplot(data = data19) + 
+  geom_histogram(aes(x = vaccine_norm, fill = gender), bins = 20) + 
+  theme_minimal() + scale_fill_brewer(palette = "Set2") + 
+  facet_wrap(~gender) + xlab("") + ylab("Frequency") + guides(fill = FALSE) + 
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Histogram of vaccine norms by gender in the Philippines, March 14 to 28, 2021")
+hist_gender
+
+# Boxplot of vaccine norms by gender
+boxplot_gender <- ggplot(data = data19) + 
+  stat_boxplot(geom = "errorbar", aes(y = vaccine_norm, x = gender)) + 
+  geom_boxplot(aes(y = vaccine_norm, x = gender, fill = gender)) + 
+  theme_minimal() + scale_fill_brewer(palette = "Set2") + 
+  xlab("") + ylab("Vaccine norm") + guides(fill = FALSE) +
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Boxplot of vaccine norms by gender in the Philippines, March 14 to 28, 2021")
+boxplot_gender
+```
+
+*Note that there are a couple of outliers that are below zero. This is a data quality issue with the data in this study, and typically we would remove it before analysis*
+
+&nbsp;
+
+Summary statistics of vaccine norm by gender
+
+```{r summ1, echo = FALSE}
+# Summary statistics 
+male_centtend <- c(format(round(length(male19), 1), nsmall = 0),
+                   format(round(mean(male19), 1), nsmall = 1),
+                   format(round(sd(male19), 1), nsmall = 1),
+                   format(round(sd(male19)^2, 1), nsmall = 1),
+                   round(median(male19), 1),
+                   format(round(as.numeric(quantile(male19,0.25)),1), nsmall = 0),
+                   format(round(as.numeric(quantile(male19,0.75)),1), nsmall = 0),
+                   format(round(as.numeric(quantile(male19,0.75)) - 
+                                  as.numeric(quantile(male19,0.25)), 1), nsmall = 0),
+                   names(table(male19))[which(table(male19) == max(table(male19)))])
+female_centtend <- c(format(round(length(female19), 1), nsmall = 0),
+                   format(round(mean(female19), 1), nsmall = 1),
+                   format(round(sd(female19), 1), nsmall = 1),
+                   format(round(sd(female19)^2, 1), nsmall = 1),
+                   round(median(female19), 1),
+                   format(round(as.numeric(quantile(female19,0.25)),1), nsmall = 0),
+                   format(round(as.numeric(quantile(female19,0.75)),1), nsmall = 0),
+                   format(round(as.numeric(quantile(female19,0.75)) - 
+                                  as.numeric(quantile(female19,0.25)), 1), nsmall = 0),
+                   names(table(female19))[which(table(female19) == max(table(female19)))])
+centtend <- as.data.frame(c("Count", "Mean", "Standard deviation (SD)", "Variance", 
+                            "Median", "First Quartile (Q1)", "Third Quartile (Q3)", 
+                            "Interquartile Range (IQR)", "Mode"))
+centtend$male <- male_centtend
+centtend$female <- female_centtend
+colnames(centtend) <- c("Vaccine norm", "Male", "Female")
+kable(centtend, booktabs = "T", align = "lcc")
+```
+
+&nbsp;
+
+```{r ttest1}
+# male19 contains all the values of vaccine norms for males during the last survey wave (Wave 19)
+# female19 contains all the values of vaccine norms for females during the last survey wave (Wave 19)
+
+# Conduct independent samples t-test, two-sided, equal variances assumed
+t.test(x = male19, y = female19, alternative = "two.sided", var.equal = TRUE)
+
+# Conduct independent samples t-test, two-sided, unequal variances assumed
+t.test(x = male19, y = female19, alternative = "two.sided", var.equal = FALSE)
+```
+
+
+**1. What are the appropriate null and alternative hypothesis for this question?**
+
+The appropriate null hypothesis is that the mean vaccine norm among females is the same as males
+
+$$H_0: \mu_{\rm{male}} = \mu_{\rm{female}}; H_a: \mu_{\rm{male}} \neq \mu_{\rm{female}} \ \ \ \mathrm{or} $$
+
+$$H_0: \mu_{\rm{male}} - \mu_{\rm{female}} = 0; H_a: \mu_{\rm{male}} - \mu_{\rm{female}} \neq 0$$
+**2. What are the assumptions required to conduct an independent samples *t*-test, and how were they fulfilled?**
+
+The assumptions are:
+
+* One variable is continuous (vaccine norm) while the other is binary (gender)
+* The data are independently and identically distributed: we assume this to be the case since it was indicated in the worksheet.
+* The distribution of vaccine norm is normally distributed for each category of gender: The histogram shows this to be true. There are a few outliers as indicated in the boxplot but the t-test is robust to these minor violations of the normal distribution.
+
+**3. Which t-test did you use - equal or unequal variances assumed? Explain your response.**
+
+The summary statistics tell us that the variances are not the same: for females, the variance of vaccine norms is 292.2 while for males it is 239.3. Therefore we use the independent samples t-test with unequal variances assumed.
+
+However, if we decide to use equal variances t-test, then there's no problem as well. The conclusions are going to end up the same. Unless the variances are egregiously far apart from one another, like say 4x apart, then we do not normally expect differences in the conclusion depending on the assumption regarding the variances. There is a formal statistical test where the null hypothesis is that the variances are equal, but we do not recommend this test because a visual inspection of the variances should suffice.
+
+**4. What can you conclude? Either use the appropriate test statistic or the 95% confidence interval (CI).**
+
+Using the test statistic, we use the *t*-statistic provided: 1.1202. The corresponding *p*-value is 0.2629. Because *p* > 0.05, we fail to reject the null hypothesis and conclude that the mean vaccine norm between males and females are the same. The mean score for males is 55.6, while for females 54.4.
+
+Using the confidence interval (CI), the 95% confidence interval of the difference in means is provided as well: (-0.89, 3.26). We see that the null value 0 crosses the 95% CI, therefore we also conclude that the mean vaccine norm between males and females are the same.
+
+
+\newpage
+
+
+**PART B. Paired samples *t*-test**
+
+In this part, we will compare the vaccine norms between Wave 9 of the survey (Oct 26 to Nov 10, 2020) to the last wave of the survey (Wave 19, Mar 14 to 28, 2021) and see if there was a significant change in vaccine norms over time. The following are statistical outputs that will help you answer the following questions:
+
+&nbsp;
+
+```{r eda2, fig.width = 10, fig.height = 4, echo = FALSE, warning = FALSE}
+## Preparing data for paired samples t-test
+## data frame "data" contains the data used for this lab
+## variables: "gender" - male vs female;  "vaccine_norm" - range: 1 to 100; "wave" - 9 (Oct 26 - Nov 8) and 19 (Mar 14 to 28)
+## data already sorted by ID
+
+# wave19 contains all the values of vaccine norms for wave 19
+wave19 <- data %>% filter(wave == 19) %>% select(vaccine_norm)
+wave19 <- as.numeric(wave19$vaccine_norm)
+# wave9 contains all the values of vaccine norms for wave 9
+wave9 <- data %>% filter(wave == 9) %>% select(vaccine_norm)
+wave9 <- as.numeric(wave9$vaccine_norm)
+# generate differences
+justwave <- data %>% select(id, wave, vaccine_norm)
+justwave_wide <- reshape(justwave, timevar = "wave", direction = "wide")
+justwave_wide <- justwave_wide %>% mutate(diff = vaccine_norm.19 - vaccine_norm.9)
+diff <- as.numeric(justwave_wide$diff)
+
+# Plot histogram of vaccine norms by wave
+hist_wave <- ggplot(data = data) + 
+  geom_histogram(aes(x = vaccine_norm, fill = factor(wave)), bins = 20) + 
+  theme_minimal() + scale_fill_brewer(palette = "Set1") + 
+  facet_wrap(~wave) + xlab("") + ylab("Frequency") + guides(fill = FALSE) + 
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Histogram of vaccine norms by survey wave in the Philippines")
+
+hist_wave
+```
+
+&nbsp;
+
+```{r eda3, fig.width = 10, fig.height = 4, echo = FALSE}
+# Plot difference of vaccine norms
+# Histogram
+hist_diff <- ggplot(justwave_wide) + geom_histogram(aes(x = diff), bins = 20, fill = "darkmagenta") +
+  theme_minimal() + xlab("") + ylab("Frequency") +
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Histogram of differences in vaccine \n norms (Wave 19 - Wave 9)")
+
+# QQ plot
+qq_diff <- ggplot(justwave_wide, aes(sample = diff)) + 
+  geom_qq(color = "darkmagenta", size = 2) + geom_qq_line(size = 1) +
+  theme_minimal() + xlab("Theoretical distribution") + ylab("Sample distribution") +
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Q-Q plot of differences in vaccine \n norms (Wave 19 - Wave 9)")
+
+grid.arrange(hist_diff, qq_diff, ncol=2)
+```
+
+&nbsp;
+
+Summary statistics of vaccine norm by survey wave
+
+```{r summ2, echo = FALSE}
+# Summary statistics 
+wave9_centtend <- c(format(round(length(wave9), 1), nsmall = 0),
+                    format(round(mean(wave9), 1), nsmall = 1),
+                   format(round(sd(wave9), 1), nsmall = 1),
+                   format(round(sd(wave9)^2, 1), nsmall = 1),
+                   round(median(wave9), 1),
+                   format(round(as.numeric(quantile(wave9,0.25)),1), nsmall = 0),
+                   format(round(as.numeric(quantile(wave9,0.75)),1), nsmall = 0),
+                   format(round(as.numeric(quantile(wave9,0.75)) - 
+                                  as.numeric(quantile(wave9,0.25)), 1), nsmall = 0),
+                   names(table(wave9))[which(table(wave9) == max(table(wave9)))])
+wave19_centtend <- c(format(round(length(wave19), 1), nsmall = 0),
+                     format(round(mean(wave19), 1), nsmall = 1),
+                   format(round(sd(wave19), 1), nsmall = 1),
+                   format(round(sd(wave19)^2, 1), nsmall = 1),
+                   round(median(wave19), 1),
+                   format(round(as.numeric(quantile(wave19,0.25)),1), nsmall = 0),
+                   format(round(as.numeric(quantile(wave19,0.75)),1), nsmall = 0),
+                   format(round(as.numeric(quantile(wave19,0.75)) - 
+                                  as.numeric(quantile(wave19,0.25)), 1), nsmall = 0),
+                   names(table(wave19))[which(table(wave19) == max(table(wave19)))])
+diff_centtend <- c(format(round(length(diff), 1), nsmall = 0),
+                   format(round(mean(diff), 1), nsmall = 1),
+                   format(round(sd(diff), 1), nsmall = 1),
+                   format(round(sd(diff)^2, 1), nsmall = 1),
+                   round(median(diff), 1),
+                   format(round(as.numeric(quantile(diff,0.25)),1), nsmall = 0),
+                   format(round(as.numeric(quantile(diff,0.75)),1), nsmall = 0),
+                   format(round(as.numeric(quantile(diff,0.75)) - 
+                                  as.numeric(quantile(diff,0.25)), 1), nsmall = 0),
+                   names(table(diff))[which(table(diff) == max(table(diff)))])
+
+centtend2 <- as.data.frame(c("Count", "Mean", "Standard deviation (SD)", "Variance", 
+                            "Median", "First Quartile (Q1)", "Third Quartile (Q3)", 
+                            "Interquartile Range (IQR)", "Mode"))
+centtend2$wave9 <- wave9_centtend
+centtend2$wave19 <- wave19_centtend
+centtend2$diff <- diff_centtend
+colnames(centtend2) <- c("Vaccine norm", "Wave 9", "Wave 19", "Difference (Wave 19 - Wave 9)")
+kable(centtend2, booktabs = "T", align = "lccc")
+```
+
+&nbsp;
+
+```{r ttest2}
+# wave9 contains all the values of vaccine norms for wave 9
+# wave19 contains all the values of vaccine norms for wave 19
+# data already sorted to align on the same row for the same ID number of survey participant
+
+# Conduct paired samples t-test, two-sided
+t.test(x = wave9, y = wave19, alternative = "two.sided", paired = TRUE)
+```
+
+&nbsp;
+
+**A paired samples t-test is effectively a one-sample means hypothesis test. This is because by subtracting the scores between the two categories of our binary variables, we effectively end up with one value, and we compare the mean of that value to zero. Clinical outcomes often look at pre- and post-event differences, and when the main independent variable is the time period (pre vs post), then we do a paired samples t-test. But we can also use the differences in an independent samples t-test when the main independent variable is something completely different, such as comparing a new drug vs placebo.**
+
+**1. What are the appropriate null and alternative hypothesis for this question?**
+
+$$H_0: \mu_{\rm{wave \ 19 \ - \ wave \ 9}} = 0; H_a: \mu_{\rm{wave \ 19 \ - \ wave \ 9}} \neq 0 $$
+
+**2. What are the assumptions required to conduct a paired samples *t*-test, and how were they fulfilled?**
+
+* The samples are the same individuals measured twice
+* The differences are normally distributed, as seen from the histogram and Q-Q plot 
+
+**3. What can you conclude? Either use the appropriate test statistic or the 95% confidence interval (CI).**
+
+Using the test statistic, we use the t-statistic provided: 13.111. The corresponding *p*-value < 0.0005. Because *p* < 0.05, we reject the null hypothesis and conclude that the mean of the differences across survey wave is not equal to zero. The mean of the difference is 9.8, meaning the vaccine norm decreased on average by 9.8 points between Wave 9 and 19.
+
+Using the confidence interval (CI), the 95% confidence interval of the difference in means is provided as well: (8.32, 11.25). We see that the null value 0 does not cross the 95% CI, therefore we also conclude that the mean of the differences across survey wave is not equal to than zero.
+
+\newpage
+
+**PART C. One-way analysis of variance**
+
+
+For this part, we want to check if there are any differences in vaccine norm by age group during the last survey wave (March 14 to 28, 2021). The following are statistical outputs that will help you answer the following questions.
+
+```{r eda4, fig.width = 10, fig.height = 8, echo = FALSE, warning = FALSE}
+## Preparing data for one way ANOVA
+## data frame "data" contains the data used for this lab
+## variables: "gender" - male vs female;  "vaccine_norm" - range: 1 to 100; "wave" - 9 (Oct 26 - Nov 8) and 19 (Mar 14 to 28)
+
+
+# Plot histogram of vaccine norms by age group
+hist_agegrp <- ggplot(data = data19) + 
+  geom_histogram(aes(x = vaccine_norm, fill = age_grp), bins = 20) + 
+  theme_minimal() + scale_fill_brewer(palette = "Set1") + 
+  facet_wrap(~age_grp) + xlab("") + ylab("Frequency") + guides(fill = FALSE) + 
+  theme(text=element_text(family="Lato", size = 16), panel.grid = element_blank()) +
+  ggtitle("Histogram of vaccine norms by age group in the Philippines, March 14 - 28, 2021")
+
+hist_agegrp
+```
+
+&nbsp;
+
+Summary statistics of vaccine norm by age group
+
+```{r summ3, echo = FALSE, message = FALSE, warning = FALSE}
+# Summary statistics 
+agetable <- data19 %>% group_by(age_grp) %>% summarize(
+  Count = n(),
+  Mean = format(round(mean(vaccine_norm), 1), nsmall = 1),
+  SD = format(round(sd(vaccine_norm), 1), nsmall = 1),
+  Variance = format(round(sd(vaccine_norm)^2, 1), nsmall = 1),
+  Median = round(median(vaccine_norm), 1),
+  Q1 = format(round(as.numeric(quantile(vaccine_norm,0.25)),1), nsmall = 1),
+  Q3 = format(round(as.numeric(quantile(vaccine_norm,0.75)),1), nsmall = 1),
+  IQR = format(round(as.numeric(quantile(vaccine_norm,0.75)) - as.numeric(quantile(vaccine_norm,0.25)), 1), nsmall = 1)) %>%
+  gather(key = key, value = value, -age_grp) %>% 
+  spread(key = age_grp, value = value)
+
+agetable <- agetable %>% arrange(match(key, c("Count", "Mean", "SD", "Variance", "Median", "Q1", "Q3", "IQR")))
+colnames(agetable) <- c("Vaccine norm", "20-30 y/o", "31-40 y/o", "41-50 y/o", "51-60 y/o")
+kable(agetable, booktabs = "T", align = "lcccc")
+```
+
+&nbsp;
+
+```{r anova}
+# The "vaccine_norm" variable contains the vaccine norm scores
+# The "age_grp" variable contains the age group categories
+
+# Conduct one-way ANOVA
+summary(aov(vaccine_norm ~ age_grp, data = data19))
+
+# Conduct post hoc pairwise t-test with Bonferroni correction
+# The results shown are the Bonferroni-inflated p-values, meaning the p-values have been inflated
+# with the Bonferroni correction factor already. Compare with the original alpha.
+pairwise.t.test(data19$vaccine_norm, data19$age_grp, p.adj = "bonf")
+```
+
+
+**1. What are the appropriate null and alternative hypothesis for this question?**
+
+$$H_0: \mu_{\rm{20-30}} =\mu_{\rm{31-40}} = \mu_{\rm{41-50}} = \mu_{\rm{51-60}} ; H_a: \rm{at \ least \ one \ mean \ is \ different \ (or \ age \ group \ is \ associated \ with \ vaccine \ norm) } $$
+
+**2. What are the assumptions required to conduct a one-way analysis of variance (ANOVA), and how were they fulfilled?**
+
+* One variable is continuous (vaccine norm), while the other is categorical (age group)
+* The data are independently and identically distributed: we assume this to be the case since it was indicated in the worksheet
+* The variances are fairly homogenous as shown in the summary statistics table (Recall the rule of thumb that as long as the highest standard deviation (19.3) is not twice as large or larger than the smallest stnadard deviation (16.6))
+* The vaccine norm values are normally distributed within each age category as shown in the histograms
+
+**3. What can you conclude from the one-way ANOVA AND the post-hoc pairwise *t*-test with Bonferroni correction (if applicable)? Mention the relevant test statistic and *p*-values, as well as the mean values of vaccine norm in each group**
+
+We use the *F*-statistic provided: 11.67. The corresponding *p*-value < 0.0005. Because *p* < 0.05, we reject the null hypothesis and conclude that at least one of the age groups had a different mean vaccine norm than the other age groups. We can also say that age group is associated with vaccine norm.
+
+**A one-way ANOVA tells us that the variables are associated, but it does not tell us which pairwise means are different. This is the purpose of the pairwise independent samples t-test. When we want to check which mean is higher or lower, we check the point estimates of the mean.**
+
+The summary statistics table shows that the mean values of vaccine norm per age group are as follows:
+
+* 21-30 years old: 53.3
+* 31-40 years old: 54.3
+* 41-50 years old: 53.2
+* 51-60 years old: 62.5
+
+Looking at the post-hoc pairwise t-test with Bonferroni correction, the Bonferroni-adjusted *p*-values that were significant were 51 vs. 60 vs. each of the other age groups.
+
+Synthesizing all the results, vaccine norm is associated with age group, and the mean vaccine norm was similar across ages 21 to 50, while significantly higher among 51-60 years old.
+
+&nbsp;
+
+\center END OF LAB \center

@@ -1,0 +1,98 @@
+---
+title: "HSCI 50 LAB 2: Basics of Probability"
+output: pdf_document
+header-includes:
+- \usepackage[default]{lato}
+- \usepackage[T1]{fontenc}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancypagestyle{plain}{\pagestyle{fancy}}
+- \fancyhead[R]{\ifnum\value{page}>1 \else Haw NJ / ADMU HSP \fi}
+mainfont: Lato
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev="cairo_pdf")
+```
+
+```{r libraries, include = FALSE}
+library(tidyverse)
+library(knitr)
+library(sysfonts)
+library(kableExtra)
+library(DiagrammeR)               # For probability trees
+library(DiagrammeRsvg)
+library(magrittr)
+library(rsvg)
+windowsFonts("Lato" = windowsFont("Lato"))
+```
+
+**INSTRUCTIONS**
+
+The data set that we will be using for the entire course is resampled data from the MIT COVID-19 Beliefs, Behaviors & Norms Survey (https://covidsurvey.mit.edu/api.html). This is a multi-country, online survey that examined different COVID-19 perceptions across time, from July 6, 2020 to March 28, 2021. We will be using data from the Philippines aged 20 to 60.
+
+In this lab, you will practice calculating probabilities given aggregate statistics from this data set.
+
+You have many options to submit this worksheet. Either you work on this by hand and scan/take a clear photo of your submission and save as PDF, or type your responses in a Word processor or PowerPoint presentation. You do not have to copy the questions again, but please number them accordingly.
+
+```{r read_data, include = FALSE}
+data <- read.csv("C:/Users/neljasonhaw/Google Drive (nhaw@ateneo.edu)/HSCI 50 SY 2021-2022/Labs/vax_accept_dummydata.csv")
+```
+
+&nbsp;
+
+&nbsp;
+
+**Part A. The following table summarizes the responses of vaccine acceptance by age group in the Philippines during the survey's final wave, conducted last March 14 to 28, 2021. Answer the questions that follow. Express your answers as fractions. You may use a calculator.**
+
+&nbsp;
+
+```{r table1, echo = FALSE, message = FALSE}
+data$response <- factor(data$response, 
+                        levels = c("Yes",  "No", "Don't Know", "Vaccinated"))
+table1 <- data %>% filter(wave == 19) %>% group_by(age_grp, response) %>% summarize(n=n()) %>% spread(age_grp, n)
+colnames(table1) <- c("Accept COVID-19 vaccine", "Aged 20-30", "Aged 31-40", "Aged 41-50", "Aged 51-60")
+kable(table1, booktab = "T", caption = "COVID-19 vaccine acceptance across age groups in the Philippines, March 14-18, 2021") %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+&nbsp;
+
+**1. The total sample size for this survey is 1,145 respondents. If a person is chosen at random from this pool of respondents, what is the probability that:**
+
+a. This person has already been vaccinated
+b. This person has not been vaccinated
+c. This person is not 51-60 years old
+d. This person does not accept the COVID-19 vaccine **or** is 20-30 years old
+e. This person accepts the COVID-19 vaccine **or** has already been vaccinated
+f. This person accepts the COVID-19 vaccine **and** has already been vaccinated
+g. This person accepts the COVID-19 vaccine **and** is 31-40 years old
+h. This person accepts the COVID-19 vaccine **given** they are 31-40 years old
+i. This person does not accept the COVID-19 vaccine or is unsure about it **given** they are 41-50 years old
+j. This person accepts the COVID-19 vaccine or has already been vaccinated **given** they are 40 years old and below
+
+
+&nbsp;
+
+**2. We define vaccine hesitancy as not accepting or being unsure about the COVID-19 vaccine. Based on this definition, does the data show that vaccine hesitancy and age are independent? Why or why not? If it is not independent, what direction is the relationship trending towards?**
+
+*Hint: calculate conditional probabilities of vaccine hesitancy per age group and express your answers as percentages.*
+
+
+&nbsp;
+
+**PART B. Read the following problem below and construct a probability tree, a 2x2 table, or use Bayes' Theorem to answer the question.**
+
+**Now consider the Philippine government's testing policy for COVID-19. The government said that in the context of a widespread outbreak and the declaration of a strict lockdown, a rapid antigen test validated against World Health Organization (WHO) standards may be used as a confirmatory COVID-19 test instead of the gold standard reverse transcriptase - polymerase chain reaction (RT-PCR) test.**
+
+**At the minimum, a validated rapid antigen test has 80% sensitivity, or the probability of receiving a positive test result given having the disease, and 97% specificity, or the probability of receiving a negative test result given not having the disease. Assume that the true prevalence of COVID-19 in a widespread outbreak is 30%. What is the positive predictive value, or the probability of having the disease given a positive test result? Round off your answer to the nearest percent.**
+
+&nbsp;
+
+&nbsp;
+
+\center END OF LAB \center
+
+
+
+
